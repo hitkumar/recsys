@@ -29,7 +29,7 @@ def reco_dataset(
 ) -> RecoDataset:
     if dataset_name == "amzn-books":
         dp = get_common_processors()["amzn-books"]
-        #  TODO: what is the difference between train and eval here?
+        #  Train tries to predict the second last item in the sequence, eval the last item
         train_dataset = DatasetV2(
             ratings_file=dp.output_format_csv(),
             padding_length=max_sequence_length + 1,
@@ -39,8 +39,9 @@ def reco_dataset(
         )
         eval_dataset = DatasetV2(
             ratings_file=dp.output_format_csv(),
+            # TODO: why +1 as we are doing -1 in dataset.py
             padding_length=max_sequence_length + 1,
-            ignore_last_n=1,
+            ignore_last_n=0,
             shift_id_by=1,
             chronological=chronological,
         )
@@ -69,8 +70,10 @@ if __name__ == "__main__":
         max_sequence_length=10,
         chronological=True,
     )
+    print("Train Dataset: ------------------")
     pprint.pp(dataset.train_dataset[0])
-    # print(dataset.eval_dataset[0])
+    print("Eval Dataset: ------------------")
+    pprint.pp(dataset.eval_dataset[0])
     # print(dataset.all_item_ids)
     print(dataset.max_item_id)
     print(dataset.max_sequence_length)

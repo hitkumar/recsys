@@ -38,9 +38,11 @@ class DatasetV2(Dataset):
     def load_item(self, data) -> Dict[str, torch.tensor]:
         user_id = data.user_id
 
-        # TODO: check if eval() is needed.
+        # eval is needed as some of the ratings are float numbers which int() cannot handle.
         def eval_as_list(x: str, ignore_last_n: int) -> List[int]:
-            return [eval(x) for x in x.split(",")[:-ignore_last_n]]
+            y = eval(x)
+            y_list = [y] if type(y) is int else list(y)
+            return y_list[:-ignore_last_n] if ignore_last_n > 0 else y_list
 
         def eval_int_list(
             x: str,
@@ -106,7 +108,6 @@ class DatasetV2(Dataset):
                 y = y + [0] * (target_len - y_len)
             else:
                 if chronological:
-                    # TODO: figure out what this means.
                     y = y[-tar_filter:]
                 else:
                     y = y[:target_len]
@@ -126,6 +127,7 @@ class DatasetV2(Dataset):
             historical_ratings.reverse()
             historical_timestamps.reverse()
 
+        history_length = min(len(historical_ids), self.padding_length - 1)
         historical_ids = _truncate_or_pad_seq(
             historical_ids, self.padding_length - 1, self.chronological
         )
@@ -143,7 +145,8 @@ class DatasetV2(Dataset):
             "historical_timestamps": torch.tensor(
                 historical_timestamps, dtype=torch.int64
             ),
-            "history_length": min(len(historical_ids), self.padding_length - 1),
+            # TODO: how is this used?
+            "history_length": history_length,
             "target_ids": target_ids,
             "target_ratings": target_ratings,
             "target_timestamps": target_timestamps,
